@@ -97,18 +97,43 @@ original timestamps and UTC equivalents. Add rows as needed.
 | file_log.csv F003 | 2026-10-20T09:13:00Z | 2026-10-20T09:13:00Z | DOWNLOAD SUCCESS, /training/case-017/hashes.txt, 4096 bytes |
 
 - Manual sum of download bytes, showing the addition: [5 5091 20]
-- A001 versus A002: which qualifies for the A005 window and why? []
-- F003 versus F004: which qualifies for the A005 follow-up and why? [fill]
-- Why F005 is excluded even though the account matches: [fill]
-- One +01:00 timestamp and its equivalent UTC time: [fill]
-- One limitation of excluding malformed records: [fill]
+- A001 versus A002: which qualifies for the A005 window and why? [A002 falls right on the 5-minute threshold for A005 (08:58:00Z), so it counts. A001 misses by just one second (08:57:59Z) and is excluded. That leaves A005 with three supporting failures—A002, A003, and A004.]
+- F003 versus F004: which qualifies for the A005 follow-up and why? [F003 qualifies because its time (09:13:00Z) hits the exact upper limit (+10 minutes). F004 misses by just one second (09:13:01Z) and is excluded, despite matching parameters.
+F005 matches the username and host within the time window, but uses a different session ID (S-OTHER vs S-104). Since all three attributes must match, F005 isn't linked to the session.]
+- Why F005 is excluded even though the account matches: [This is beacause the session ID is't same from A005. Even though the account name and host match and the time is in range]
+- One +01:00 timestamp and its equivalent UTC time: [For A004, 2026-10-20T10:01:00+01:00 converts to 09:01:00Z by subtracting 1-hour offset.]
+- One limitation of excluding malformed records: [Dropping malformed records means some activity gets left out. For instance, file_log.csv was ignored because its bytes value said "unknown". If that was a valid download in session S-104, the actual total for A005 exceeds 5,509,120 bytes—making our calculated total a minimum, not an exact count.]
 
 ## Checks actually run
 
 Command, date and actual final result (paste output, including failures if any):
 
 ```text
-[fill]
+[test_supplied_case (__main__.CaseChecks.test_supplied_case) ... ok
+test_closed_window_includes_zero_and_ten_minutes (__main__.DownloadChecks.test_closed_window_includes_zero_and_ten_minutes) ... ok
+test_configurable_followup (__main__.DownloadChecks.test_configurable_followup) ... ok
+test_does_not_mutate_either_input (__main__.DownloadChecks.test_does_not_mutate_either_input) ... ok
+test_empty (__main__.DownloadChecks.test_empty) ... ok
+test_keeps_alert_with_no_downloads (__main__.DownloadChecks.test_keeps_alert_with_no_downloads) ... ok
+test_ranking_event_ties_and_repeated_paths (__main__.DownloadChecks.test_ranking_event_ties_and_repeated_paths) ... ok
+test_requires_session_account_host_action_and_success (__main__.DownloadChecks.test_requires_session_account_host_action_and_success) ... ok
+test_conflicting_ids_are_not_silently_discarded (__main__.EvidenceChecks.test_conflicting_ids_are_not_silently_discarded) ... ok
+test_equivalent_time_offsets_and_missing_offset (__main__.EvidenceChecks.test_equivalent_time_offsets_and_missing_offset) ... ok
+test_hash_mismatch_stops_analysis (__main__.EvidenceChecks.test_hash_mismatch_stops_analysis) ... ok
+test_supplied_quality_counts_and_duplicates (__main__.EvidenceChecks.test_supplied_quality_counts_and_duplicates) ... ok
+test_account_ip_and_host_must_all_match (__main__.LoginChecks.test_account_ip_and_host_must_all_match) ... ok
+test_does_not_mutate_input (__main__.LoginChecks.test_does_not_mutate_input) ... ok
+test_empty (__main__.LoginChecks.test_empty) ... ok
+test_failures_without_success_are_not_alerts (__main__.LoginChecks.test_failures_without_success_are_not_alerts) ... ok
+test_outside_equal_and_future_failures_do_not_count (__main__.LoginChecks.test_outside_equal_and_future_failures_do_not_count) ... ok
+test_parameters_and_each_success_window (__main__.LoginChecks.test_parameters_and_each_success_window) ... ok
+test_ties_and_output_order (__main__.LoginChecks.test_ties_and_output_order) ... ok
+test_unsorted_rows_and_evidence_order (__main__.LoginChecks.test_unsorted_rows_and_evidence_order) ... ok
+test_window_includes_exactly_five_minutes (__main__.LoginChecks.test_window_includes_exactly_five_minutes) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.005s
+]
 ```
 
 All 21 supplied checks should pass. Passing these checks is limited validation
@@ -118,15 +143,36 @@ of the stated classroom rule, not certification of a forensic tool.
 
 Prompt 3 response about the overstated claim (keep the actual response):
 
-> [paste]
+Unsupported parts (under 100 words)
+“Belongs to the attacker”: the ranking measures recorded volume only. Nothing supplied shows identity, motive or authorization, and an account (analyst01) is not a person.
+“Proves stole evidence”: F001 to F003 record DOWNLOAD SUCCESS events. They don’t show theft, a destination, or a completed transfer, and no file contents are supplied.
+“Hashes prove authentic and complete”: a SHA-256 match shows only agreement with the supplied baseline. Origin and completeness are unestablished, and 9 rows were rejected.
+Cautious rewrite
+
+Session S-104 (analyst01, success A005 at 2026-10-20T09:03:00Z after failures A002 to A004) has the highest recorded download volume, 5,509,120 bytes across F001 to F003, so it is the best candidate for review. This shows only what the logs record: it doesn’t identify a person, intent or authorization, and matching hashes show agreement with the supplied baseline, not authenticity or completeness, with 9 rows excluded as malformed.
 
 One claim we corrected or independently verified, with event IDs:
 
-[fill]
+[We checked that F005 (8,000,000 bytes, 09:04:00Z) should not be counted for A005. It matches the username and host and is inside the time window, but its session_id is S-OTHER, not S-104, so the join fails. A shared username alone is not a reliable link.]
 
 Final 180-220 word finding, reviewed and edited by the pair:
 
-[write here]
+Observation. Session S-104 (analyst01, 203.0.113.44, DF-PORTAL01) is the leading session for review. Three failures (A002 08:58:00Z, A003 09:00:00Z, A004 09:01:00Z) preceded success A005 at 09:03:00Z. Between 09:05:00Z and 09:13:00Z, the log records three successful downloads, F001, F002 and F003, totalling 5,509,120 bytes. By comparison, flagged session S-304 (A018, analyst02) shows one download, F013, of 2,048 bytes, and A014 (backup_svc) shows none, so S-104 ranks first by recorded volume only.
+
+Inference. This pattern merits review, but it does not identify a person, show lack of authorisation or prove completed exfiltration. A plausible benign explanation is that the account holder mistyped a password and then exported routine case files.
+
+Limitations. Nine malformed rows (five authentication, four file) were excluded, so true activity may be larger. Matching SHA-256 hashes show agreement with the supplied baseline only, not authenticity or completeness; clock accuracy is also unverified.
+
+Next evidence requests. (1) The portal’s MFA and authorisation records for A005 and session S-104; (2) transfer completion and destination network logs for F001–F003.
+
+Checks. The full check result has not been supplied, so none is claimed.
+
+Verify before using it
+Word count: I count about 186 words, and the target is 180 to 220. Paste it into a word counter, because tools count dates and hyphenated terms differently.
+A018 and F013: the figures (one download, 2,048 bytes) come from the expected results in check_solution.py, not from your own files. Compare them with your regenerated summary.json, and A014’s zero downloads too.
+Total: confirm your own addition, 5242880 + 262144 + 4096, equals 5,509,120.
+Last line: once you’ve run python3 check_solution.py yourself, replace it with your real result. If you see Ran 21 tests and OK, you can write that the 21 supplied checks passed on your run, with the date.
+Benign explanation: I invented it as a possibility, not a fact. Edit it if you prefer another one, as long as it stays clearly labelled as a possibility.
 
 It must cite evidence IDs, separate observation from inference, include a
 comparison session, two limitations, one benign explanation and two next
