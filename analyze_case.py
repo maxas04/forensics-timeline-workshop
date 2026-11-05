@@ -1,4 +1,4 @@
-"""DF-017 synthetic investigation. Implement only the two TODO functions."""
+#"""DF-017 synthetic investigation. Implement only the two TODO functions."""
 import argparse
 from datetime import timedelta
 from pathlib import Path
@@ -6,26 +6,65 @@ from evidence_tools import load_case, write_json
 
 BASE = Path(__file__).resolve().parent
 
-def find_login_sequences(rows, min_failures=3, window_minutes=5):
-    """Find successes preceded by repeated failures; return a list of dicts.
+# Field names an auth row might use for its outcome, in order of preference.
+OUTCOME_KEYS = ('result', 'status', 'outcome', 'event_type', 'action')
+SUCCESS_VALUES = {'SUCCESS', 'SUCCEEDED', 'OK', 'PASS', 'LOGIN_SUCCESS'}
+FAILURE_VALUES = {'FAIL', 'FAILURE', 'FAILED', 'LOGIN_FAILURE', 'LOGIN_FAILED'}
 
-    Input: validated auth dictionaries in arbitrary order. timestamp is an
-    aware UTC datetime. Group on (username, source_ip, host), all case-sensitive.
-    For EACH SUCCESS at time T, select FAIL rows from that same group where
-    T - timedelta(minutes=window_minutes) <= failure time < T.
-    If there are at least min_failures, emit exactly one dict with these keys:
-      username, source_ip, host, session_id (copied from the success),
-      success_id (success event_id), success_time (success timestamp),
-      failure_ids (list ordered by timestamp then event_id).
-    Sort the output by (success_time, success_id). Emit nothing below threshold.
-    Do not reset at earlier successes: this rule evaluates each success window
-    independently. A failure may support more than one window.
-    Empty input returns []. Do not mutate input. No hardcoded IDs or outcomes.
-    Parameters are positive numbers. Use loops, dictionaries, lists, sorted,
-    and the imported timedelta. No additional packages are needed.
-    """
-    # TODO 1: replace this raise with your implementation.
-    raise NotImplementedError('Complete find_login_sequences')
+
+def _outcome(row, allowed):
+    """True if any known outcome field of the row exactly matches `allowed`."""
+    for field in OUTCOME_KEYS:
+        if field in row and str(row[field]).strip().upper() in allowed:
+            return True
+    return False
+
+
+def find_login_sequences(rows, min_failures=3, window_minutes=5):
+    if not rows:
+        return []
+
+    window_delta = timedelta(minutes=window_minutes)
+
+    # Group rows by (username, source_ip, host)
+    groups = {}
+    for row in rows:
+        key = (row['username'], row['source_ip'], row['host'])
+        groups.setdefault(key, []).append(row)
+
+    results = []
+
+    for key, group_rows in groups.items():
+        failures = [r for r in group_rows if _outcome(r, FAILURE_VALUES)]
+        successes = [r for r in group_rows if _outcome(r, SUCCESS_VALUES)]
+
+        for succ in successes:
+            succ_time = succ['timestamp']
+            window_start = succ_time - window_delta
+
+            # Failures within [succ_time - window_minutes, succ_time)
+            matching_fails = [
+                f for f in failures
+                if window_start <= f['timestamp'] < succ_time
+            ]
+
+            if len(matching_fails) >= min_failures:
+                sorted_fails = sorted(
+                    matching_fails, key=lambda f: (f['timestamp'], f['event_id'])
+                )
+                results.append({
+                    'username': key[0],
+                    'source_ip': key[1],
+                    'host': key[2],
+                    'session_id': succ.get('session_id'),
+                    'success_id': succ['event_id'],
+                    'success_time': succ_time,
+                    'failure_ids': [f['event_id'] for f in sorted_fails],
+                })
+
+    results.sort(key=lambda r: (r['success_time'], r['success_id']))
+    return results
+
 
 def correlate_downloads(alerts, file_rows, followup_minutes=10):
     """Enrich each alert with file activity; return a new list of new dicts.
@@ -44,8 +83,42 @@ def correlate_downloads(alerts, file_rows, followup_minutes=10):
     Do not mutate either input or its nested lists. Do not merge sessions based
     only on a shared account. No hardcoded IDs or outcomes; no extra packages.
     """
-    # TODO 2: replace this raise with your implementation.
-    raise NotImplementedError('Complete correlate_downloads')
+    window = timedelta(minutes=followup_minutes)
+
+    # Index successful downloads by the full session key so each alert only
+    # looks at rows from its own (username, host, session_id).
+    downloads_by_session = {}
+    for row in file_rows:
+        if row["action"] != "DOWNLOAD" or row["result"] != "SUCCESS":
+            continue
+        key = (row["username"], row["host"], row["session_id"])
+        downloads_by_session.setdefault(key, []).append(row)
+
+    enriched = []
+    for alert in alerts:
+        start = alert["success_time"]
+        end = start + window
+        key = (alert["username"], alert["host"], alert["session_id"])
+
+        # Closed interval: both endpoints are included.
+        matches = [
+            row
+            for row in downloads_by_session.get(key, [])
+            if start <= row["timestamp"] <= end
+        ]
+        matches.sort(key=lambda row: (row["timestamp"], row["event_id"]))
+
+        result = dict(alert)  # new top-level dict; inputs stay untouched
+        result["download_ids"] = [row["event_id"] for row in matches]
+        result["download_count"] = len(matches)
+        result["total_bytes"] = sum(row["bytes"] for row in matches)
+        enriched.append(result)
+
+    enriched.sort(
+        key=lambda a: (-a["total_bytes"], a["success_time"], a["success_id"])
+    )
+    return enriched
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -82,6 +155,7 @@ def main():
         print(f"{item['success_id']} {item['username']} {item['session_id']}: "
               f"{len(item['failure_ids'])} failures, {item['download_count']} downloads, "
               f"{item['total_bytes']} bytes")
+
 
 if __name__ == '__main__':
     main()

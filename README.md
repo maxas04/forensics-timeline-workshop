@@ -67,16 +67,18 @@ with this supplied baseline; it does not establish authenticity or completeness.
 
 | Source | Data rows excluding header | Accepted unique | Duplicate | Rejected |
 | --- | --- | --- | --- | --- |
-| auth_log.csv | [fill] | [fill] | [fill] | [fill] |
-| file_log.csv | [fill] | [fill] | [fill] | [fill] |
+| auth_log.csv | [60] | [54] | [1] | [5] |
+| file_log.csv | [35] | [30] | [1] | [4] |
 
-- SHA-256 check outcome and what it establishes: [fill]
-- One rejected event ID and the exact rejection reason: [fill]
-- Number of flagged successful sessions: [fill]
+- SHA-256 check outcome and what it establishes: [There are the same ]
+- One rejected event ID and the exact rejection reason: [A900,Invalid isoformat string: 'not-a-time' ]
+- Number of flagged successful sessions: [3]
 
 | Success ID | Account | Session | Supporting failure IDs | Download IDs | Event count | Total bytes |
 | --- | --- | --- | --- | --- | --- | --- |
-| [one row per flagged success] | | | | | | |
+| A005 | analyst01 | S-104 | A002, A003, A004 | F001, F002, F003 | 3 | 5509120 |
+| A018 | analyst02 | S-304 | A015, A016, A017 | F013 | 1 | 2048 |
+| A014 | backup_svc | S-204 | A011, A012, A013 | none | 0 | 0 |
 
 ## Manual evidence check -- do this without asking AI to count for you
 
@@ -86,10 +88,16 @@ original timestamps and UTC equivalents. Add rows as needed.
 
 | Source and event ID | Original timestamp | UTC timestamp | What the row records |
 | --- | --- | --- | --- |
-| [fill] | [fill] | [fill] | [fill] |
+| auth_log.csv A002 | 2026-10-20T08:58:00Z | 2026-10-20T08:58:00Z | FAIL login, analyst01, 203.0.113.44, DF-PORTAL01 |
+| auth_log.csv A003 | 2026-10-20T09:00:00Z | 2026-10-20T09:00:00Z | FAIL login, analyst01, 203.0.113.44, DF-PORTAL01 (a second identical row is a duplicate, excluded) |
+| auth_log.csv A004 | 2026-10-20T10:01:00+01:00 | 2026-10-20T09:01:00Z | FAIL login, analyst01, 203.0.113.44, DF-PORTAL01 |
+| auth_log.csv A005 | 2026-10-20T09:03:00Z | 2026-10-20T09:03:00Z | SUCCESS login, analyst01, session S-104 |
+| file_log.csv F001 | 2026-10-20T09:05:00Z | 2026-10-20T09:05:00Z | DOWNLOAD SUCCESS, /training/case-017/evidence_export.zip, 5242880 bytes (a second identical row is a duplicate, excluded) |
+| file_log.csv F002 | 2026-10-20T10:07:00+01:00 | 2026-10-20T09:07:00Z | DOWNLOAD SUCCESS, /training/case-017/interview_notes.pdf, 262144 bytes |
+| file_log.csv F003 | 2026-10-20T09:13:00Z | 2026-10-20T09:13:00Z | DOWNLOAD SUCCESS, /training/case-017/hashes.txt, 4096 bytes |
 
-- Manual sum of download bytes, showing the addition: [fill]
-- A001 versus A002: which qualifies for the A005 window and why? [fill]
+- Manual sum of download bytes, showing the addition: [5 5091 20]
+- A001 versus A002: which qualifies for the A005 window and why? []
 - F003 versus F004: which qualifies for the A005 follow-up and why? [fill]
 - Why F005 is excluded even though the account matches: [fill]
 - One +01:00 timestamp and its equivalent UTC time: [fill]
