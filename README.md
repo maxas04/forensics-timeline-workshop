@@ -180,11 +180,35 @@ evidence requests. Do not claim that an account or IP identifies a person.
 
 ## AI use and pair review
 
-- Names of both partners: [fill]
-- GenAI tool/ChatGPT date and displayed model: [fill]
-- Prompts used and what they produced: [fill]
-- One follow-up question or correction, with a short response excerpt: [fill]
-- Results of code and evidence checks performed: [fill]
+- Names of both partners: [Maximilien SIMON & Charles DUBOIS]
+- GenAI tool/ChatGPT date and displayed model: [Claude (Antropic), Sonnet 5.5)]
+- Prompts used and what they produced: [Prompt 1,2,3,4 and ask explanation of different step]
+- One follow-up question or correction, with a short response excerpt: [I pasted login_alerts.json and the AI concluded the earlier empty summary.json was stale, not a bug in find_login_sequences.]
+- Results of code and evidence checks performed: [python3 check_solution.py, test_supplied_case (__main__.CaseChecks.test_supplied_case) ... ok
+test_closed_window_includes_zero_and_ten_minutes (__main__.DownloadChecks.test_closed_window_includes_zero_and_ten_minutes) ... ok
+test_configurable_followup (__main__.DownloadChecks.test_configurable_followup) ... ok
+test_does_not_mutate_either_input (__main__.DownloadChecks.test_does_not_mutate_either_input) ... ok
+test_empty (__main__.DownloadChecks.test_empty) ... ok
+test_keeps_alert_with_no_downloads (__main__.DownloadChecks.test_keeps_alert_with_no_downloads) ... ok
+test_ranking_event_ties_and_repeated_paths (__main__.DownloadChecks.test_ranking_event_ties_and_repeated_paths) ... ok
+test_requires_session_account_host_action_and_success (__main__.DownloadChecks.test_requires_session_account_host_action_and_success) ... ok
+test_conflicting_ids_are_not_silently_discarded (__main__.EvidenceChecks.test_conflicting_ids_are_not_silently_discarded) ... ok
+test_equivalent_time_offsets_and_missing_offset (__main__.EvidenceChecks.test_equivalent_time_offsets_and_missing_offset) ... ok
+test_hash_mismatch_stops_analysis (__main__.EvidenceChecks.test_hash_mismatch_stops_analysis) ... ok
+test_supplied_quality_counts_and_duplicates (__main__.EvidenceChecks.test_supplied_quality_counts_and_duplicates) ... ok
+test_account_ip_and_host_must_all_match (__main__.LoginChecks.test_account_ip_and_host_must_all_match) ... ok
+test_does_not_mutate_input (__main__.LoginChecks.test_does_not_mutate_input) ... ok
+test_empty (__main__.LoginChecks.test_empty) ... ok
+test_failures_without_success_are_not_alerts (__main__.LoginChecks.test_failures_without_success_are_not_alerts) ... ok
+test_outside_equal_and_future_failures_do_not_count (__main__.LoginChecks.test_outside_equal_and_future_failures_do_not_count) ... ok
+test_parameters_and_each_success_window (__main__.LoginChecks.test_parameters_and_each_success_window) ... ok
+test_ties_and_output_order (__main__.LoginChecks.test_ties_and_output_order) ... ok
+test_unsorted_rows_and_evidence_order (__main__.LoginChecks.test_unsorted_rows_and_evidence_order) ... ok
+test_window_includes_exactly_five_minutes (__main__.LoginChecks.test_window_includes_exactly_five_minutes) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.004s
+]
 
 
 ## Submit
